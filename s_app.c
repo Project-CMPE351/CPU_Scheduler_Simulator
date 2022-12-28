@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-include <string.h>
+#include <string.h>
 
 #define MAX_LINE_LENGTH 256
 
@@ -10,8 +10,8 @@ typedef struct process {
 int burst_time;
 int arrival_time;
 int priority;
+struct process *next;  
 } Process;
-
 
 void error() {
     printf("Required: -f <input.txt> | -o <output.txt>\n" );
@@ -23,7 +23,7 @@ int main (int argc, char *argv [])
 {
 //Declarations
     int inputOpt;
-    int f_flag =0, o_flag = 0;
+    char f_flag = 0, o_flag=0;
 
     if (argc<4){
         error();
@@ -40,22 +40,30 @@ int main (int argc, char *argv [])
         case 'o':
             printf("o: %s\n", optarg);
             o_flag = 1;
+            break;
         default:
             printf("Invalid option: %c\n", inputOpt);
             error();
             break;
         }
     }
-//  Check if required options are given
+//Check if all options are given
    if (!f_flag || !o_flag) {
-    printf("Both -f and -o options are required\n");
+    printf("Both the -f and -o options are required\n");
     error();
 }
-//   Open input file
+
+ //Open input file
 FILE *input_file = fopen(optarg, "r");
 if (input_file == NULL) {
 printf("Error opening input file\n");
 return 1;
+}
+// Open output file
+FILE *output_file = fopen(out_fl, "w");
+if (output_file == NULL) {
+    printf("Error opening output file\n");
+    return 1;
 }
 
 // Read data from file and parse into linked list
@@ -108,5 +116,15 @@ while (current != NULL) {
 // Close output file
 fclose(output_file);
 
+// Iterate through linked list and free memory
+Process *current = head;
+while (current != NULL) {
+    Process *next = current->next;
+    free(current);
+    current = next;
 }
 }
+
+
+
+
