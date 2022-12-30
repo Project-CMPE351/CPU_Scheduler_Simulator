@@ -9,10 +9,40 @@ typedef struct process {
     
 int burst_time;
 int arrival_time;
-int priority;
-struct process *next;  
+int title;
+    struct process *next;  
 } Process;
 
+static int num = 0; // Assign an id to a newly created process
+Process *createNode(int b_t, int a_t, int priority) {
+    Process *node = malloc(sizeof(Process));
+    node->burst_time = b_t;
+    node->arrival_time = a_t;
+    node->priority = priority;
+    node->next = NULL;
+    return node;
+}
+
+Process *insertBack(Process *header, int b_t, int a_t, int priority) {
+    Process *node = createNode(b_t, a_t, priority);
+    if (header == NULL) {
+        return node;
+    }
+    Process *current = header;
+    while (current->next != NULL) {
+        current = current->next;
+    }
+    current->next = node;
+    return header;
+}
+
+void display(Process *header, FILE *output_file) {
+  Process *current = header;
+  while (current != NULL) {
+    fprintf(output_file, "%d:%d:%d\n", current->burst_time, current->arrival_time, current->priority);
+    current = current->next;
+  }
+}
 void error() {
     printf("Required: -f <input.txt> | -o <output.txt>\n" );
     exit(2);
