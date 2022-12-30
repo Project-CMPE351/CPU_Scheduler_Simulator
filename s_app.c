@@ -7,9 +7,10 @@
 
 typedef struct process {
     
-int burst_time;
-int arrival_time;
-int title;
+    int burst_time;
+    int arrival_time;
+    int title;
+    int priority;
     struct process *next;  
 } Process;
 
@@ -19,10 +20,11 @@ Process *createNode(int b_t, int a_t, int priority) {
     node->burst_time = b_t;
     node->arrival_time = a_t;
     node->priority = priority;
+    node->title = num; // assign title to each process
+    num++; // increment num after each process is created
     node->next = NULL;
     return node;
 }
-
 Process *insertBack(Process *header, int b_t, int a_t, int priority) {
     Process *node = createNode(b_t, a_t, priority);
     if (header == NULL) {
@@ -36,13 +38,6 @@ Process *insertBack(Process *header, int b_t, int a_t, int priority) {
     return header;
 }
 
-void display(Process *header, FILE *output_file) {
-  Process *current = header;
-  while (current != NULL) {
-    fprintf(output_file, "%d:%d:%d\n", current->burst_time, current->arrival_time, current->priority);
-    current = current->next;
-  }
-}
 void error() {
     printf("Required: -f <input.txt> | -o <output.txt>\n" );
     exit(2);
@@ -54,6 +49,7 @@ int main (int argc, char *argv [])
 //Declarations
     int inputOpt;
     char f_flag = 0, o_flag=0;
+    char *out_fl = optarg;
 
     if (argc<4){
         error();
@@ -70,13 +66,14 @@ int main (int argc, char *argv [])
         case 'o':
             printf("o: %s\n", optarg);
             o_flag = 1;
+            char *out_fl = optarg; // define out_fl variable and assign value of optarg
             break;
         default:
             printf("Invalid option: %c\n", inputOpt);
             error();
             break;
         }
-    }
+
 //Check if all options are given
    if (!f_flag || !o_flag) {
     printf("Both the -f and -o options are required\n");
@@ -88,6 +85,13 @@ FILE *input_file = fopen(optarg, "r");
 if (input_file == NULL) {
 printf("Error opening input file\n");
 return 1;
+}
+void display(Process *header, FILE *output_file) {
+  Process *current = header;
+  while (current != NULL) {
+    fprintf(output_file, "%d:%d:%d\n", current->title, current->burst_time, current->arrival_time, current->priority);
+    current = current->next;//print title
+  }
 }
 // Open output file
 FILE *output_file = fopen(out_fl, "w");
@@ -116,7 +120,7 @@ current = current->next;
 }
 
 // Split line into fields and convert to appropriate data types
-token = strtok(line, delimiter);
+{token = strtok(line, delimiter);
 node->burst_time = atoi(token);
 token = strtok(NULL, delimiter);
 node->arrival_time = atoi(token);
@@ -124,10 +128,11 @@ token = strtok(NULL, delimiter);
 node->priority = atof(token);
 }
 
+        display(head);
+    }
 // Close input file
 fclose(input_file);
 
-return 0;
 
 // Open output file
 FILE *output_file = fopen(out_fl, "w");
