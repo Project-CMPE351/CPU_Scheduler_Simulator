@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
+// #include <getopt.h>
 #include <string.h>
 
-#define MAX_LINE_LENGTH 256
-
 typedef struct process {
-    
     int burst_time;
     int arrival_time;
     int title;
@@ -15,7 +12,8 @@ typedef struct process {
     struct process *next;  
 } Process;
 
-static int num = 0; // Assign an id to a newly created process
+static int num = 1; // Assign an id to a newly created process
+
 Process *createNode(int b_t, int a_t, int priority) {
     Process *node = (Process*)malloc(sizeof(Process));
     node->burst_time = b_t;
@@ -26,23 +24,29 @@ Process *createNode(int b_t, int a_t, int priority) {
     node->next = NULL;
     return node;
 }
-Process *insertOrdered(Process *header, int b_t, int a_t, int priority) {
+
+void insertSorted(Process **head, int b_t, int a_t, int priority) {
     Process *node = createNode(b_t, a_t, priority);
-    if (header == NULL) {
-        return node;
+    if (*head == NULL) {
+        *head = node;
+        return;
     }
-    Process *current = header;
-    while (current->next != NULL) {
+    Process *current = *head;
+    while (current->next != NULL && current->next->arrival_time <= a_t) {
         current = current->next;
     }
+    if (current->next != NULL){
+        Process *next = current->next;
+        node->next = next;
+    }
     current->next = node;
-    return header;
+    return;
 }
 
 
-void display(Process *header, FILE *output_file) {
+void display(Process *header, FILE *output_file, char *description) {
     Process *current = header;
-    printf("Scheduling Method: Shortest Job First –Preemptive\n");
+    printf("Scheduling Method: %s\n", description);
     printf("Process Waiting Times:\n");
     int sum_wait_time = 0;
     int count = 0;
@@ -59,11 +63,11 @@ void display(Process *header, FILE *output_file) {
 void DoFCFS(Process *head){
     Process *current = head;
     int time_passed = 0;
-    while (true) {
+    while (current != NULL) {
+        if (current->arrival_time > time_passed) time_passed = current->arrival_time;
+        current->start_time = time_passed;
         time_passed += current->burst_time;
         current = current->next;
-        if (current == NULL) break;
-        current->start_time = time_passed - current->arrival_time;
     }
 }
 
@@ -85,26 +89,18 @@ int main (int argc, char *argv [])
 
     // Read data from file and parse into linked list
     Process *head = NULL;
-    char line[MAX_LINE_LENGTH];
     char *token;
+    int burst,arrival,priority;
 
+    while (fscanf(input_file, "%d:%d:%d\n", &burst, &arrival, &priority) != EOF) {
+        insertSorted(&head, burst, arrival, priority);
+    }
 
-
-    while (fgets(line, MAX_LINE_LENGTH, input_file) != NULL) {
-    // Create new node in linked list
-        Process *node = (Process*)malloc(sizeof(Process));
-
-        printf("%s", line);
-        if (head == NULL) {
-            head = node;
-            //current = head;
-            //
-        } else {
-            //current->next = node;
-            //current = current->next;
-        }
-
-
+    // Test read processes
+    Process *reader = head;
+    while (reader != NULL) {
+        printf("P%d: Burst: %d, arrival: %d, priority: %d\n",reader->title,reader->burst_time,reader->arrival_time,reader->priority);
+        reader = reader->next;
     }
     // Close input file
     fclose(input_file);
@@ -113,7 +109,7 @@ int main (int argc, char *argv [])
     DoFCFS(head);
 
     // Iterate through linked list and write data to output file
-    display(head, output_file);
+    display(head, output_file, "First come first serve - Non preemptive");
 
 
     // Close output file
@@ -127,7 +123,3 @@ int main (int argc, char *argv [])
         cleaningPtr = next;
     }
 }
-
-
-
-
