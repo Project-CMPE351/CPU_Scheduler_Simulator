@@ -42,7 +42,38 @@ void insertSorted(Process **head, int b_t, int a_t, int priority) {
     current->next = node;
     return;
 }
+Process *findMinBurstNode(Process *head) {
+    Process *current = head;
+    Process *min_node = current;
+    int min_burst_time = current->burst_time;
 
+    while (current != NULL) {
+        if (current->burst_time < min_burst_time) {
+            min_node = current;
+            min_burst_time = current->burst_time;
+        }
+        current = current->next;
+    }
+    return min_node;
+}
+Process *removeNode(Process *head, Process *node) {
+    if (head == NULL) return NULL;
+    if (head == node) {
+        Process *new_head = head->next;
+        free(head);
+        return new_head;
+    }
+    Process *current = head;
+    while (current->next != NULL && current->next != node) {
+        current = current->next;
+    }
+    if (current->next == node) {
+        Process *next = current->next->next;
+        free(current->next);
+        current->next = next;
+    }
+    return head;
+}
 
 void display(Process *header, FILE *output_file, char *description) {
     Process *current = header;
@@ -70,6 +101,26 @@ void DoFCFS(Process *head){
         current = current->next;
     }
 }
+
+/*void DoSJF(Process *head) {
+    Process *current = head;
+    int time_passed = 0;
+
+    while (current != NULL) {
+        
+        Process *min_node = findMinBurstNode(current);
+
+        // Set the start time for the selected node
+        if (min_node->arrival_time > time_passed) time_passed = min_node->arrival_time;
+        min_node->start_time = time_passed;
+        time_passed += min_node->burst_time;
+
+        // Remove the selected node from the linked list
+        current = removeNode(current, min_node);
+    }
+}*/
+
+
 
 int main (int argc, char *argv []) 
 {
@@ -107,10 +158,12 @@ int main (int argc, char *argv [])
 
     // algorithm goes here
     DoFCFS(head);
+    //DoSJF(head);
 
     // Iterate through linked list and write data to output file
-    display(head, output_file, "First come first serve - Non preemptive");
-
+    display(head, output_file, "First come first serve - Non preemptive");  
+    
+    //display(head, output_file, "Scheduling Method: Shortest Job First - Non-Preemptive");
 
     // Close output file
     fclose(output_file);
