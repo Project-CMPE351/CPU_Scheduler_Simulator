@@ -9,16 +9,23 @@ typedef struct process {
     int title;
     int priority;
     int start_time;
+    bool done;
     struct process *next;  
 } Process;
 
 static int num = 1; // Assign an id to a newly created process
+
+void printNode(Process *node) {
+    printf("P%d: Burst: %d, arrival: %d, priority: %d\n",node->title,node->burst_time,node->arrival_time,node->priority);
+}
 
 Process *createNode(int b_t, int a_t, int priority) {
     Process *node = (Process*)malloc(sizeof(Process));
     node->burst_time = b_t;
     node->arrival_time = a_t;
     node->priority = priority;
+    node->done = false;
+    node->start_time = -1;
     node->title = num; // assign title to each process
     num++; // increment num after each process is created
     node->next = NULL;
@@ -42,13 +49,12 @@ void insertSorted(Process **head, int b_t, int a_t, int priority) {
     current->next = node;
     return;
 }
-Process *findMinBurstNode(Process *head) {
+Process *findMinBurstNode(Process *head, int current_time) {
     Process *current = head;
     Process *min_node = current;
     int min_burst_time = current->burst_time;
-
-    while (current != NULL) {
-        if (current->burst_time < min_burst_time) {
+    while (current != NULL && current->arrival_time <= current_time) {
+        if (!current->done && current->burst_time < min_burst_time) {
             min_node = current;
             min_burst_time = current->burst_time;
         }
@@ -102,24 +108,24 @@ void DoFCFS(Process *head){
     }
 }
 
-/*void DoSJF(Process *head) {
-    Process *current = head;
+// Non preemptive
+void DoSJF(Process *head) {
     int time_passed = 0;
-
-    while (current != NULL) {
-        
-        Process *min_node = findMinBurstNode(current);
-
-        // Set the start time for the selected node
+    while (1) {
+        Process *min_node = findMinBurstNode(head, time_passed);
         if (min_node->arrival_time > time_passed) time_passed = min_node->arrival_time;
         min_node->start_time = time_passed;
         time_passed += min_node->burst_time;
-
-        // Remove the selected node from the linked list
-        current = removeNode(current, min_node);
+        min_node->done = true;
+        Process *node = head;
+        bool done = true;
+        while (node != NULL) {
+            if (!node->done) done = false;
+            node = node->next;
+        }
+        if (done) break;
     }
-}*/
-
+}
 
 
 int main (int argc, char *argv []) 
