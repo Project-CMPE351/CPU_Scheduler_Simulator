@@ -9,6 +9,7 @@ typedef struct process {
     int title;
     int priority;
     int start_time;
+    int wait_time;
     bool done;
     struct process *next;  
 } Process;
@@ -26,6 +27,7 @@ Process *createNode(int b_t, int a_t, int priority) {
     node->priority = priority;
     node->done = false;
     node->start_time = -1;
+    node->wait_time = 0;
     node->title = num; // assign title to each process
     num++; // increment num after each process is created
     node->next = NULL;
@@ -49,6 +51,7 @@ void insertSorted(Process **head, int b_t, int a_t, int priority) {
     current->next = node;
     return;
 }
+
 Process *findMinBurstNode(Process *head, int current_time) {
     Process *current = head;
     Process *min_node = current;
@@ -58,10 +61,12 @@ Process *findMinBurstNode(Process *head, int current_time) {
             min_node = current;
             min_burst_time = current->burst_time;
         }
+        if (current->done && min_node == current && current->next != NULL) min_node = current->next;
         current = current->next;
     }
     return min_node;
 }
+
 Process *removeNode(Process *head, Process *node) {
     if (head == NULL) return NULL;
     if (head == node) {
@@ -88,7 +93,7 @@ void display(Process *header, FILE *output_file, char *description) {
     int sum_wait_time = 0;
     int count = 0;
     while (current != NULL) {
-        int wait_time = current->start_time - current->arrival_time;
+        int wait_time = current->start_time - current->arrival_time + current->wait_time;
         sum_wait_time += wait_time;
         printf("P%d %d ms\n", current->title, wait_time);
         current = current->next; //print title
@@ -97,7 +102,7 @@ void display(Process *header, FILE *output_file, char *description) {
     printf("Average Waiting Time: %.1f ms", (double) sum_wait_time / count);
 }
 
-void DoFCFS(Process *head){
+void DoFCFS(Process *head) {
     Process *current = head;
     int time_passed = 0;
     while (current != NULL) {
@@ -114,7 +119,7 @@ void DoSJF(Process *head) {
     while (1) {
         Process *min_node = findMinBurstNode(head, time_passed);
         if (min_node->arrival_time > time_passed) time_passed = min_node->arrival_time;
-        min_node->start_time = time_passed;
+        else min_node->start_time = time_passed;
         time_passed += min_node->burst_time;
         min_node->done = true;
         Process *node = head;
@@ -127,9 +132,37 @@ void DoSJF(Process *head) {
     }
 }
 
+void DoSJFP(Process *head) {
+    int time_passed = 0;
+    while (1){
+        // printf("Time passed: %d\n", time_passed);
+        Process *min_node = findMinBurstNode(head, time_passed);
+        if (!min_node->done) {
+            if (min_node->start_time == -1) min_node->start_time = time_passed;
+            if (min_node->burst_time <= 1) min_node->done = true;
+            min_node->burst_time--;
+        }
+        time_passed++;
+        // printNode(min_node);
+        Process *node = head;
+        bool done = true;
+        while (node != NULL) {
+            if (!node->done) {
+                if (node != min_node && node->start_time > -1) node->wait_time++;
+                done = false;
+            }
+            node = node->next;
+        }
+        if (done) return;
+    }
+}
 
-int main (int argc, char *argv []) 
-{
+void DoRoundRobin() {
+    
+
+}
+
+int main(int argc, char *argv []) {
     //Open input file
     FILE *input_file = fopen("input.txt", "r");
     if (input_file == NULL) {
@@ -163,14 +196,14 @@ int main (int argc, char *argv [])
     fclose(input_file);
 
     // algorithm goes here
-    DoFCFS(head);
-    //DoSJF(head);
+    // DoFCFS(head);
+    // DoSJF(head);
+    DoSJFP(head);
 
     // Iterate through linked list and write data to output file
-    display(head, output_file, "First come first serve - Non preemptive");  
-    
-    //display(head, output_file, "Scheduling Method: Shortest Job First - Non-Preemptive");
-
+    //display(head, output_file, "First come first serve - Non preemptive");
+    display(head, output_file, "Scheduling Method: Shortest Job First - Non-Preemptive");
+    display(head, output_file, "Scheduling Method: Shortest Job First  - Preemptive");
     // Close output file
     fclose(output_file);
 
