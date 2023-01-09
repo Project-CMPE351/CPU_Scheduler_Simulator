@@ -156,30 +156,44 @@ void DoSJFP(Process *head) {
         if (done) return;
     }
 }
-
-void DoRoundRobin(Process *head) {
-    int time_passed = 0;
-    int quantum = 2;
-    while (1) {
-        Process *current= head;
-        bool done = true;
-        while (current!= NULL) {
-            if (!current->done) {
-                if (current->start_time == -1) current->start_time = time_passed;
-                if (current->burst_time <= quantum) {
-                    current->done = true;
-                    time_passed += current->burst_time;
-                } else {
-                    current->burst_time -= quantum;
-                    time_passed += quantum;
-                }
-                done = false;
-            }
-            current= current->next;
-        }
-        if (done) return;
+void doRoundRobin(Process *head) {
+    // Create a queue to hold the processes
+    Process *queue = NULL;
+    // Add all the processes to the queue
+    Process *current = head;
+    while (current != NULL) {
+        insertSorted(&queue, current->burst_time, current->arrival_time, current->priority);
+        current = current->next;
     }
+    // Set the time passed to 0
+    int time_passed = 0;
+    // Set the current process to the first process in the queue
+    current = queue;
+    // Run the scheduler loop until all processes are done
+    while (current != NULL) {
+        // If the current process has not started yet, set its start time
+        if (current->start_time == -1) {
+            current->start_time = time_passed;
+        }
+        // Run the current process for the time quantum
+        current->burst_time -= 2;
+        time_passed += 2;
+        // If the current process has completed, mark it as done and remove it from the queue
+        if (current->burst_time <= 0) {
+            current->done = true;
+            queue = removeNode(queue, current);
+        }
+        // If the current process has not completed, requeue it at the end of the queue
+        else {
+            insertSorted(&queue, current->burst_time, current->arrival_time, current->priority);
+            queue = removeNode(queue, current);
+        }
+        // Set the current process to the next process in the queue
+        current = queue;
+    }
+    // Print the results of the scheduling
 }
+
 
 int main(int argc, char *argv []) {
     //Open input file
@@ -217,13 +231,14 @@ int main(int argc, char *argv []) {
     // algorithm goes here
     // DoFCFS(head);
     // DoSJF(head);
-    // DoSJFP(head);
-    // DoRoundRobin(head);
+    //DoSJFP(head);
+      doRoundRobin(head);
 
     // Iterate through linked list and write data to output file
     //display(head, output_file, "First come first serve - Non preemptive");
-    display(head, output_file, "Scheduling Method: Shortest Job First - Non-Preemptive");
-    display(head, output_file, "Scheduling Method: Shortest Job First  - Preemptive");
+    //display(head, output_file, "Scheduling Method: Shortest Job First - Non-Preemptive");
+    //display(head, output_file, "Scheduling Method: Shortest Job First  - Preemptive");
+      display(head, output_file, "Scheduling Method: Round Robin ");
     // Close output file
     fclose(output_file);
 
