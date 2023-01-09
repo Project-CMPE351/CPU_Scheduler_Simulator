@@ -157,9 +157,28 @@ void DoSJFP(Process *head) {
     }
 }
 
-void DoRoundRobin() {
-    
-
+void DoRoundRobin(Process *head) {
+    int time_passed = 0;
+    int quantum = 2;
+    while (1) {
+        Process *current= head;
+        bool done = true;
+        while (current!= NULL) {
+            if (!current->done) {
+                if (current->start_time == -1) current->start_time = time_passed;
+                if (current->burst_time <= quantum) {
+                    current->done = true;
+                    time_passed += current->burst_time;
+                } else {
+                    current->burst_time -= quantum;
+                    time_passed += quantum;
+                }
+                done = false;
+            }
+            current= current->next;
+        }
+        if (done) return;
+    }
 }
 
 int main(int argc, char *argv []) {
@@ -198,7 +217,8 @@ int main(int argc, char *argv []) {
     // algorithm goes here
     // DoFCFS(head);
     // DoSJF(head);
-    DoSJFP(head);
+    // DoSJFP(head);
+    // DoRoundRobin(head);
 
     // Iterate through linked list and write data to output file
     //display(head, output_file, "First come first serve - Non preemptive");
