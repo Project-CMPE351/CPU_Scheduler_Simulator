@@ -66,7 +66,7 @@ Process *findMinBurstNode(Process *head, int current_time) {
     }
     return min_node;
 }
-
+void scheduling
 Process *removeNode(Process *head, Process *node) {
     if (head == NULL) return NULL;
     if (head == node) {
@@ -185,6 +185,65 @@ void DoRoundRobin(Process *head, int time_quantum) {
     }
 }
 
+Process *findPriorityNode(Process *head, int current_time) {
+    Process *current = head;
+    Process *priority_node = current;
+    int min_priority = current->priority;
+    while (current != NULL && current->arrival_time <= current_time) {
+        if (!current->done && current->priority < min_priority) {
+            priority_node = current;
+            min_priority = current->priority;
+        }
+        if (current->done && priority_node == current && current->next != NULL) priority_node = current->next;
+        current = current->next;
+    }
+    return priority_node;
+}
+
+void DoPriority(Process *head) {
+    int time_passed = 0;
+    Process *current = head;
+    while (true) {
+        current = findPriorityNode(head,time_passed);
+        if (current->arrival_time > time_passed) time_passed = current->arrival_time;
+        current->start_time = time_passed;
+        time_passed += current->burst_time;
+        current->done = true;
+        Process *node = head;
+        bool done = true;
+        while (node != NULL) {
+            if (!node->done) { 
+                done = false;
+            }
+            node = node->next;
+        }
+        if (done) return;
+    }
+}
+
+void DoPriorityP(Process *head) {
+    int time_passed = 0;
+    Process *current = head;
+    while (true) {
+        current = findPriorityNode(head,time_passed);
+        if (!current->done) {
+            if (current->start_time == -1) current->start_time = time_passed;
+            if (current->burst_time <= 1) current->done = true;
+            current->burst_time--;
+        }
+        time_passed++;
+        Process *node = head;
+        bool done = true;
+        while (node != NULL) {
+            if (!node->done) {
+                if (node != current && node->start_time > -1) node->wait_time++;
+                done = false;
+            }
+            node = node->next;
+        }
+        if (done) return;
+    }
+}
 
 int main(int argc, char *argv []) {
     //Open input file
@@ -223,13 +282,15 @@ int main(int argc, char *argv []) {
     // DoFCFS(head);
     // DoSJF(head);
     // DoSJFP(head);
-    DoRoundRobin(head, 2);
+    // DoRoundRobin(head, 2);
+    // DoPriority(head);
+    // DoPriorityP(head);
 
     // Iterate through linked list and write data to output file
     //display(head, output_file, "First come first serve - Non preemptive");
     //display(head, output_file, "Scheduling Method: Shortest Job First - Non-Preemptive");
     //display(head, output_file, "Scheduling Method: Shortest Job First  - Preemptive");
-    display(head, output_file, "Scheduling Method: Round Robin ");
+    // display(head, output_file, "Scheduling Method: Round Robin ");
     // Close output file
     fclose(output_file);
 
