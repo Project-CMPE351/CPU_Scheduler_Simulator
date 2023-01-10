@@ -159,26 +159,29 @@ void DoSJFP(Process *head) {
 void DoRoundRobin(Process *head, int time_quantum) {
     Process *current = head;
     int time_passed = 0;
-    while (1){
+    while (1) {
         if (current == NULL) current = head;
-        while (current->done) current = current->next; //
-        if (current == NULL) break;
+        while (current->done || (current->arrival_time > time_passed)) current = current->next; //
+        int extra_time = 0;
         if (current->start_time == -1) current->start_time = time_passed; // -__-
-        if (current->burst_time <= time_quantum) current->done = true;
-        current->burst_time -= time_quantum;
-        time_passed += time_quantum;
-        current = current->next;
+        if (current->burst_time <= time_quantum) {
+            current->done = true;
+            extra_time = time_quantum - current->burst_time;
+        }
+        current->burst_time -= time_quantum;    // |P1 3|P2 2|P3 1|P4 2|P5 1|P1 1|P2 0|P3 0|P4 0|P5 0|P1 0|
+        time_passed += time_quantum - extra_time;
         // Check for done
         Process *node = head;
         bool done = true;
         while (node != NULL) {
-            if (!node->done) {
-                if (node != current && node->start_time -1) node->wait_time += time_quantum;
+            if (!node->done) { 
+                if (node != current && node->start_time > -1 && node->arrival_time <= time_passed) node->wait_time += time_quantum - extra_time;
                 done = false;
             }
             node = node->next;
         }
         if (done) return;
+        current = current->next;
     }
 }
 
