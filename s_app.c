@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-// #include <getopt.h>
+#include <getopt.h>
 #include <string.h>
 
 typedef struct process {
@@ -19,7 +19,6 @@ static int num = 1; // Assign an id to a newly created process
 void printNode(Process *node) {
     printf("P%d: Burst: %d, arrival: %d, priority: %d\n",node->title,node->burst_time,node->arrival_time,node->priority);
 }
-
 Process *createNode(int b_t, int a_t, int priority) {
     Process *node = (Process*)malloc(sizeof(Process));
     node->burst_time = b_t;
@@ -33,7 +32,6 @@ Process *createNode(int b_t, int a_t, int priority) {
     node->next = NULL;
     return node;
 }
-
 void insertSorted(Process **head, int b_t, int a_t, int priority) {
     Process *node = createNode(b_t, a_t, priority);
     if (*head == NULL) {
@@ -51,7 +49,6 @@ void insertSorted(Process **head, int b_t, int a_t, int priority) {
     current->next = node;
     return;
 }
-
 Process *findMinBurstNode(Process *head, int current_time) {
     Process *current = head;
     Process *min_node = current;
@@ -66,7 +63,6 @@ Process *findMinBurstNode(Process *head, int current_time) {
     }
     return min_node;
 }
-void scheduling
 Process *removeNode(Process *head, Process *node) {
     if (head == NULL) return NULL;
     if (head == node) {
@@ -85,10 +81,9 @@ Process *removeNode(Process *head, Process *node) {
     }
     return head;
 }
-
-void display(Process *header, FILE *output_file, char *description) {
+void display(Process *header, FILE *output_file, char *description, bool preemptive) {
     Process *current = header;
-    printf("Scheduling Method: %s\n", description);
+    printf("Scheduling Method: %s %s\n", description, preemptive ? "Preemptive" : "Non preemptive");
     printf("Process Waiting Times:\n");
     int sum_wait_time = 0;
     int count = 0;
@@ -96,12 +91,13 @@ void display(Process *header, FILE *output_file, char *description) {
         int wait_time = current->start_time - current->arrival_time + current->wait_time;
         sum_wait_time += wait_time;
         printf("P%d %d ms\n", current->title, wait_time);
+        fprintf(output_file, "P%d %d ms\n", current->title, wait_time);
         current = current->next; //print title
         count++;
     }
     printf("Average Waiting Time: %.1f ms\n", (double) sum_wait_time / count);
 }
-
+struct process * getdata(char *in_txt, struct process *hdr);
 void DoFCFS(Process *head) {
     Process *current = head;
     int time_passed = 0;
@@ -112,7 +108,6 @@ void DoFCFS(Process *head) {
         current = current->next;
     }
 }
-
 // Non preemptive
 void DoSJF(Process *head) {
     int time_passed = 0;
@@ -131,7 +126,6 @@ void DoSJF(Process *head) {
         if (done) break;
     }
 }
-
 void DoSJFP(Process *head) {
     int time_passed = 0;
     while (1){
@@ -184,7 +178,6 @@ void DoRoundRobin(Process *head, int time_quantum) {
         current = current->next;
     }
 }
-
 Process *findPriorityNode(Process *head, int current_time) {
     Process *current = head;
     Process *priority_node = current;
@@ -199,7 +192,6 @@ Process *findPriorityNode(Process *head, int current_time) {
     }
     return priority_node;
 }
-
 void DoPriority(Process *head) {
     int time_passed = 0;
     Process *current = head;
@@ -220,7 +212,6 @@ void DoPriority(Process *head) {
         if (done) return;
     }
 }
-
 void DoPriorityP(Process *head) {
     int time_passed = 0;
     Process *current = head;
@@ -245,60 +236,132 @@ void DoPriorityP(Process *head) {
     }
 }
 
+char *input_file_name, *output_file_name; //input and output file
+
 int main(int argc, char *argv []) {
-    //Open input file
-    FILE *input_file = fopen("input.txt", "r");
-    if (input_file == NULL) {
-        printf("Error opening input file\n");
-        return 1;
+
+    if(argc < 4){
+        exit(1);
     }
-   
-    // Open output file
-    FILE *output_file = fopen("output.txt", "w");
-    if (output_file == NULL) {
-        printf("Error opening output file\n");
-        return 1;
+    
+    int optionInput;//Getopt var. holder
+
+    while((optionInput = getopt(argc, argv, "f:o:")) != -1){//prompt the user for the input and output file
+        switch (optionInput)
+        {
+        case 'f':
+            input_file_name = optarg;
+            break;
+        case 'o':
+            output_file_name = optarg;
+            break;
+        default:
+            exit(1);
+            break;
+        }
     }
+
+    printf("Input: %s, output: %s\n", input_file_name, output_file_name);
+
+    
 
     // Read data from file and parse into linked list
     Process *head = NULL;
     char *token;
     int burst,arrival,priority;
 
-    while (fscanf(input_file, "%d:%d:%d\n", &burst, &arrival, &priority) != EOF) {
-        insertSorted(&head, burst, arrival, priority);
+    
+
+    bool preemptive = false;
+    
+    char *method;
+    char fcfs[] = "first come first serve";
+    char sjf[] = "shortest job first";
+    char rr[] = "round robin";
+    char pr[] = "priority";
+    method = fcfs;
+
+    while (1) {
+        printf("1) Scheduling Method (%s)\n", method);
+        printf("2) Preemptive Mode (%s)\n", preemptive ? "On" : "Off");
+        printf("3) Show Result\n");
+        printf("4) End Program\n");
+        printf("Option > ");
+        int option;
+        scanf("%d", &option);
+        printf("You have selected %d\n", option);
+        if (option == 1){
+            while (1) {
+                int choice;
+                printf("1) Select first come first serve\n");
+                printf("2) Select shortest job first\n");
+                printf("3) Select round robin\n");
+                printf("4) Select priority\n");
+                printf("Option > ");
+                scanf("%d", &choice);
+                if (choice > 4 || choice < 1) continue;
+                if (choice == 1) method = fcfs;
+                if (choice == 2) method = sjf;
+                if (choice == 3) method = rr;
+                if (choice == 4) method = pr;
+                break;
+            }
+        }
+        if (option == 2) preemptive = !preemptive;
+        if (option == 3) {
+            FILE *input_file = fopen(input_file_name, "r");
+            if (input_file == NULL) {
+                printf("Error opening input file\n");
+                return 1;
+            }
+        
+            // Open output file
+            FILE *output_file = fopen(output_file_name, "w");
+            if (output_file == NULL) {
+                printf("Error opening output file\n");
+                return 1;
+            }
+
+            while (fscanf(input_file, "%d:%d:%d\n", &burst, &arrival, &priority) != EOF) {
+                insertSorted(&head, burst, arrival, priority);
+            }
+
+
+            // Test read processes
+            Process *reader = head;
+            while (reader != NULL) {
+                printf("P%d: Burst: %d, arrival: %d, priority: %d\n",reader->title,reader->burst_time,reader->arrival_time,reader->priority);
+                reader = reader->next;
+            }
+            // Close input file
+            fclose(input_file);
+
+            if (method == fcfs) {
+                preemptive = false;
+                DoFCFS(head);
+            }
+            if (method == sjf) {
+                if (preemptive) DoSJFP(head);
+                else DoSJF(head);
+            }
+            if (method == rr) {
+                preemptive = false;
+                int time_quantum;
+                printf("Enter your time quantum > ");
+                scanf("%d", &time_quantum);
+                DoRoundRobin(head,time_quantum);
+            }
+            if (method == pr) {
+                if (preemptive) DoPriorityP(head);
+                else DoPriority(head);
+            }
+            display(head, output_file, method, preemptive);
+
+            fclose(output_file);
+      
+            exit(1);
+        }
+        if (option == 4) exit(1);
     }
 
-    // Test read processes
-    Process *reader = head;
-    while (reader != NULL) {
-        printf("P%d: Burst: %d, arrival: %d, priority: %d\n",reader->title,reader->burst_time,reader->arrival_time,reader->priority);
-        reader = reader->next;
-    }
-    // Close input file
-    fclose(input_file);
-
-    // algorithm goes here
-    // DoFCFS(head);
-    // DoSJF(head);
-    // DoSJFP(head);
-    // DoRoundRobin(head, 2);
-    // DoPriority(head);
-    // DoPriorityP(head);
-
-    // Iterate through linked list and write data to output file
-    //display(head, output_file, "First come first serve - Non preemptive");
-    //display(head, output_file, "Scheduling Method: Shortest Job First - Non-Preemptive");
-    //display(head, output_file, "Scheduling Method: Shortest Job First  - Preemptive");
-    // display(head, output_file, "Scheduling Method: Round Robin ");
-    // Close output file
-    fclose(output_file);
-
-    // Iterate through linked list and free memory
-    Process *cleaningPtr = head;
-    while (cleaningPtr != NULL) {
-        Process *next = cleaningPtr->next;
-        free(cleaningPtr);
-        cleaningPtr = next;
-    }
 }
